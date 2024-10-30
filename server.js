@@ -17,17 +17,17 @@ const clients = new Map(); // เก็บข้อมูลผู้ใช้�
 wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     const data = JSON.parse(message);
-    if (data.id) {
-      clients.set(data.id, ws); // บันทึกการเชื่อมต่อโดยใช้ id
-      console.log(`Client connected with id: ${data.id}`);
+    if (data.screenId) {
+      clients.set(data.screenId, ws); // บันทึกการเชื่อมต่อโดยใช้ screenId
+      console.log(`Client connected with screenId: ${data.screenId}`);
     }
   });
 
   ws.on("close", () => {
-    clients.forEach((client, id) => {
+    clients.forEach((client, screenId) => {
       if (client === ws) {
-        clients.delete(id);
-        console.log(`Client disconnected with id: ${id}`);
+        clients.delete(screenId);
+        console.log(`Client disconnected with screenId: ${screenId}`);
       }
     });
   });
@@ -35,14 +35,22 @@ wss.on("connection", (ws) => {
 
 // Endpoint สำหรับรับข้อความจาก Postman
 app.post("/send-message", (req, res) => {
-  const { message, id } = req.body;
+  const { customItemId, itemId, libraryItemId, screenId } = req.body;
 
-  const client = clients.get(id);
+  const client = clients.get(screenId);
   if (client) {
-    client.send(JSON.stringify({ message: `Echo: ${message}`, id }));
+    // ส่งข้อมูลทั้งหมดไปยัง frontend
+    const message = {
+      customItemId,
+      itemId,
+      libraryItemId,
+      screenId,
+    };
+
+    client.send(JSON.stringify(message));
     res.status(200).send({ status: "Message sent to WebSocket" });
   } else {
-    res.status(400).send({ error: "Invalid ID" });
+    res.status(400).send({ error: "Invalid screenId" });
   }
 });
 
